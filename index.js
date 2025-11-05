@@ -53,14 +53,15 @@ if (variables.length) {
 }
 
 // ALIAS DESCRIPTION COLUMNS
-const DESCRIPTION_CODE_REGEX = /([A-Za-z_]+)\.(DESCRIPTION|CODE)(\,?)/gi;
+const DESCRIPTION_CODE_REGEX = /([A-Za-z_]+)\.(DESCRIPTION|CODE|CODE_NAME|VOID)(\,?) /gi;
 let [selectStatement, restOfSql] = sql.split('from'); // only alias the select statement
 for (const [fullMatch, tableName, columnName, maybeComma] of selectStatement.matchAll(
     DESCRIPTION_CODE_REGEX
 )) {
+    const aliasName = fullMatch.includes('VOID') ? `${tableName}_VOID` : tableName;
     selectStatement = selectStatement.replace(
         fullMatch,
-        `${tableName}.${columnName} ${tableName}${maybeComma} `
+        `${tableName}.${columnName} ${aliasName}${maybeComma} `
     );
 }
 
