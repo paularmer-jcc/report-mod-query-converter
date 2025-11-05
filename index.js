@@ -58,7 +58,6 @@ let [selectStatement, restOfSql] = sql.split('from'); // only alias the select s
 for (const [fullMatch, tableName, columnName, maybeComma] of selectStatement.matchAll(
     DESCRIPTION_CODE_REGEX
 )) {
-    console.log(`${fullMatch} => ${tableName}.${columnName} ${tableName}${maybeComma} `);
     selectStatement = selectStatement.replace(
         fullMatch,
         `${tableName}.${columnName} ${tableName}${maybeComma} `
