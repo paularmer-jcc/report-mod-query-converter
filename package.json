@@ -1,0 +1,16 @@
+{
+    "name": "report-mod",
+    "version": "1.0.0",
+    "main": "index.js",
+    "type": "module",
+    "scripts": {
+        "start": "node index.js"
+    },
+    "author": "Paul Armer",
+    "license": "ISC",
+    "description": "",
+    "dependencies": {
+        "copy-paste": "^2.2.0",
+        "sql-formatter": "^15.6.10"
+    }
+}
