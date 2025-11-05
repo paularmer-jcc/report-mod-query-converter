@@ -1,6 +1,6 @@
 # Requirements & Installation
 
--   Requires node.js and npm
+-   Requires node.js and npm: [https://nodejs.org/en](https://nodejs.org/en)
 -   To install, run `npm install` in the root of the project
 
 # Usage
