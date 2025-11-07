@@ -45,6 +45,10 @@ async function replaceVariables(sourceSql) {
 
     let modifiedSql = sourceSql;
     if (variables.length) {
+        const consoleInterface = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout,
+        });
         const prompt = query => new Promise(resolve => consoleInterface.question(query, resolve));
 
         for (const { match, name } of variables) {
