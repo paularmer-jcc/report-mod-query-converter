@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Report Mod Query Converter</title>
+        <base href="/" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <style type="text/css">
+            .container {
+                width: 100%;
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+
+            .row {
+                display: flex;
+            }
+
+            .column {
+                flex-grow: 1;
+
+                margin-left: 1rem;
+                margin-right: 1rem;
+            }
+
+            .column:first-child {
+                margin-left: 0;
+            }
+            .column:last-child {
+                margin-right: 0;
+            }
+
+            textarea {
+                width: 100%;
+                min-height: 50vh;
+                resize: vertical;
+                overflow: auto;
+            }
+
+            button {
+                float: right;
+                padding: 0.5rem;
+                font-size: 1.25rem;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Report Mod Query Converter</h1>
+            <p></p>
+            <div class="row">
+                <div class="column">
+                    <h2>Input</h2>
+                    <textarea id="inputBox"></textarea>
+                    <button onclick="convert()">Convert SQL</button>
+                </div>
+                <div class="column">
+                    <h2>Result</h2>
+                    <textarea id="resultBox" readonly></textarea>
+                </div>
+            </div>
+        </div>
+    </body>
+    <script type="text/javascript">
+        function convert() {
+            const inputValue = document.querySelector('#inputBox').value;
+            document.querySelector('#resultBox').value = aliasColumns(replaceVariables(inputValue));
+        }
+
+        function replaceVariables(sourceSql) {
+            const BI_QUERY_VAR_REGEX = /«([^»]+)»/g;
+            const variableMatches = sourceSql.match(BI_QUERY_VAR_REGEX);
+            const variables =
+                variableMatches ?
+                    Object.keys(
+                        variableMatches.reduce(
+                            (matchMap, match) => ({ ...matchMap, [match]: true }),
+                            {},
+                        ),
+                    ).map(match => ({ match, name: match.slice(1, -1) }))
+                :   [];
+            const VAR_NAME_SUGGESTIONS = {
+                start_date: /^(date1?|begdate|beginningdate|month)/gi,
+                end_date: /(enddate|edate|date2)/gi,
+                justice: /(justice|judge)/gi,
+            };
+
+            switch (variables.length) {
+                case 0:
+                    console.log('no variables found');
+                    break;
+                case 1:
+                    console.log('found 1 variable');
+                    break;
+                default:
+                    console.log(`found ${variables.length} found`);
+            }
+
+            let modifiedSql = sourceSql;
+            if (variables.length) {
+                for (const { match, name } of variables) {
+                    // suggest a new variable name
+                    const suggestedName = Object.entries(VAR_NAME_SUGGESTIONS).reduce(
+                        (varName, [suggestion, regExp]) =>
+                            regExp.test(varName) ? suggestion : varName,
+                        name.toLowerCase().replace(/ /g, '_'),
+                    );
+
+                    // ask for new var name (or accept suggestion)
+                    const newVarName =
+                        prompt(`${match} variable name (${suggestedName}): `) || suggestedName;
+                    const isDate = newVarName.includes('date'); // maybe prompt user for var type?
+                    modifiedSql = modifiedSql.replaceAll(
+                        match,
+                        isDate ? `to_date(:${newVarName}, 'mm/dd/yyyy')` : `:${newVarName}`,
+                    );
+                }
+            }
+            return modifiedSql;
+        }
+
+        function aliasColumns(sourceSql) {
+            const DESCRIPTION_CODE_REGEX =
+                /([A-Za-z_]+)\.(DESCRIPTION|CODE|CODE_NAME|VOID)(\,?) /gi;
+            const fromIndex = sourceSql.indexOf('from');
+            let selectStatement = sourceSql.slice(0, fromIndex); // only alias the first select statement
+            const restOfSql = sourceSql.slice(fromIndex);
+
+            for (const [fullMatch, tableName, columnName, maybeComma] of selectStatement.matchAll(
+                DESCRIPTION_CODE_REGEX,
+            )) {
+                const aliasName = fullMatch.includes('VOID') ? `${tableName}_VOID` : tableName;
+                selectStatement = selectStatement.replace(
+                    fullMatch,
+                    `${tableName}.${columnName} ${aliasName}${maybeComma} `,
+                );
+            }
+
+            return `${selectStatement} from ${restOfSql}`;
+        }
+    </script>
+</html>
